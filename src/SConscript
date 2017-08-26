@@ -1,0 +1,6 @@
+# -*- python -*-
+Import('env')
+
+tdd = env.Latex('tdd.pdf', 'tdd.tex')
+env.Default(tdd)
+

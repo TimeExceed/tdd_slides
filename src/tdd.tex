@@ -1,0 +1,1407 @@
+\documentclass[lualatex]{beamer}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+\usepackage[scaled=.90]{helvet}
+\usepackage{courier}
+\usepackage{graphicx}
+\usepackage{listings}
+
+\setbeameroption{show notes}
+\usetheme{Madrid}
+\lstset{basicstyle=\footnotesize\ttfamily,language={C++}}
+
+\title[TDD]{A Short Introduction to\\Test-Driven Development}
+  \author{Taoda}
+  \institute{Aliyun}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}
+  \frametitle{Outline}
+  \tableofcontents
+\end{frame}
+
+\note{
+  This talk introduces software engineering knowledge of the last century.
+  In last century, SE is an area of management.
+  Since the millineum, this area rapidly turns to formal methods.
+  They are topics of other talks.
+}
+
+\section{Background}
+
+\subsection[steps]{development elements}
+
+\begin{frame}
+  \frametitle{Development elements}
+
+  \begin{block}{~}
+    \begin{enumerate}
+    \item requirement analyze
+    \item design
+    \item code
+    \item test
+    \item release/deploy
+    \end{enumerate}
+  \end{block}
+  \note[item]{
+    In waterfall model, people do these 5 steps sequentially. If every step can be done perfectly and there is a very limited group of human resources, this is the most efficient model in theory.
+  }
+  \note[item]{
+    In big company, people usually focus on their own areas.
+    To exploit these people, V model rises.
+    However, both V model and waterfall model work only if these 5 steps are perfectly done.
+    This is usually not true in internet companies.
+  }
+\end{frame}
+
+\begin{frame}
+  \frametitle{CMMI}
+  \note[item]{
+    \scriptsize
+    CMU's mature models for many areas.
+    The most famous one of them is software mature model, aka, CMM-Software.
+    After many years application, CMU realized that people have difficulties in distinguishing her models.
+    So, CMU integrated her models based on CMM-Software.
+    That was CMMI.
+  }
+
+  \begin{block}{levels}
+    \begin{enumerate}
+    \item initial
+      \note[item]{
+        \scriptsize
+        Initial level considers success of software projects as windfall.
+      }
+    \item managed: project-level 
+      \note[item]{
+        \scriptsize
+        In managed level, project success will be achieved repeatedly.
+        It recognizes 6 important elements, not 6 steps.
+        These elements are must-do.
+        CMMI says nothing about how-to-do.
+        \begin{itemize}
+        \scriptsize
+        \item REQM: 
+          Analyze requirements, pass them to devs and testers, and track them.
+        \item PP: 
+          What, Who, and When.
+        \item PMC:
+          How things go on?
+        \item SAM:
+          How to assure release quality and deadlines of 2nd-party or 3rd-party libraries,
+          and how to track them and push them.
+          There are usually two ways:
+          i) making contracts, or 
+          2) everyone can access and modify everything.
+        \item PPQA:
+          This element is more than testing.
+          It also includes deployment processes.
+        \item CM:
+          It includes how to store codes, documents, delivery binaries or packages and flags/environments and how to deploy them.
+        \end{itemize}
+      }
+      \begin{itemize}
+      \item REQuirement Management
+      \item Project Planning
+      \item Project Monitoring and Control
+      \item Supply Agreement Management 
+      \item Product and Process Quality Assurance
+      \item Configuration Management
+      \end{itemize}
+    \item defined: organization-wide
+    \item quantitatively managed: organizational performance 
+    \item optimized: risk and innovation 
+      \note[item]{
+        \scriptsize
+        These organizational levels are unrelated to topics about this talk.
+      }
+    \end{enumerate}
+  \end{block}
+\end{frame}
+
+\section[Testing Framework]{Python Testing Framework: An Example}
+
+\subsection{A To-Do List}
+
+\begin{frame}
+    \frametitle{What is a testing frame supposed to do?}
+
+    \begin{block}{To-Do}
+        \begin{itemize}
+            \item Invoke test method
+            \item Invoke setUp first 
+            \item Invoke tearDown afterward 
+            \item Invoke tearDown even if the test method fails 
+            \item Run multiple tests 
+            \item Report collected results 
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\subsection{test method}
+
+\begin{frame}[fragile,t]
+    \frametitle{Invoke test method}
+
+    \begin{columns}[t]
+        \small
+        \column{.45\textwidth}
+        \begin{onlyenv}<1-2>
+            \begin{block}{test cases}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+test = WasRun()
+assert not test.wasRun
+test.testMethod()
+assert test.wasRun
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<3>
+            \begin{block}{test cases}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+test = WasRun()
+assert not test.wasRun
+test.run()
+assert test.wasRun
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<4->
+            \begin{block}{test cases}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+test = WasRun("testMethod")
+assert not test.wasRun
+test.run()
+assert test.wasRun
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \column{.45\textwidth}
+        \begin{onlyenv}<2>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class WasRun:
+  def __init__(self):
+    self.wasRun = 0
+  def testMethod(self):
+    self.wasRun = 1
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+        \note<2>{
+          The 1st to-do is fulfilled, though it is hacky.
+          What to do then?
+          Not a next feature.
+          Refactory!
+        }
+        \begin{onlyenv}<3-4>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class WasRun:
+  def __init__(self):
+    self.wasRun = 0
+  def testMethod(self):
+    self.wasRun = 1
+  def run(self):
+    self.testMethod()
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+        
+        \begin{onlyenv}<5>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class WasRun:
+  def __init__(self, name):
+    self.wasRun = 0
+    self.name = name
+  def testMethod(self):
+    self.wasRun = 1
+  def run(self):
+    method=getattr(self, self.name)
+    method()
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+        \note[item]<5>{
+          WasRun.run() looks quite general.
+          It is a good idea to extract a base class.
+        }
+    \end{columns}        
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{Invoke test method}
+
+    \begin{columns}[t]
+        \small
+        \column{.45\textwidth}
+        \begin{onlyenv}<1>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCase:
+  pass
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+        \note<1>{
+          Do a little thing. Make sure UTs pass.
+        }
+
+        \begin{onlyenv}<2>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCase:
+  def __init__(self, name):
+    self.name = name
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<3->
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCase:
+  def __init__(self, name):
+    self.name = name
+  def run(self):
+    method=getattr(self, self.name)
+    method()
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \column{.45\textwidth}
+        \begin{onlyenv}<1>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class WasRun(TestCase):
+  def __init__(self, name):
+    self.wasRun = 0
+    self.name = name
+  def testMethod(self):
+    self.wasRun = 1
+  def run(self):
+    method=getattr(self, self.name)
+    method()
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<2>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class WasRun(TestCase):
+  def __init__(self, name):
+    TestCase.__init__(self, name)
+    self.wasRun = 0
+  def testMethod(self):
+    self.wasRun = 1
+  def run(self):
+    method=getattr(self, self.name)
+    method()
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<3>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class WasRun(TestCase):
+  def __init__(self, name):
+    TestCase.__init__(self, name)
+    self.wasRun = 0
+  def testMethod(self):
+    self.wasRun = 1
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+    \end{columns}
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{Invoke test method}
+
+    \begin{columns}[t]
+        \small
+        \column{.45\textwidth}
+        \begin{onlyenv}<1->
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCase:
+  def __init__(self, name):
+    self.name = name
+  def run(self):
+    method=getattr(self, self.name)
+    method()
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+
+        \column{.45\textwidth}
+        \begin{onlyenv}<1>
+            \begin{block}{test cases}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+test = WasRun()
+assert not test.wasRun
+test.run()
+assert test.wasRun
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<2>
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCaseTest(TestCase):
+  def testRunning(self):
+    test=WasRun("testMethod")
+    assert(not test.wasRun)
+    test.run()
+    assert(test.wasRun)
+TestCaseTest("testRunning").run()
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{review}
+
+  \begin{block}{~}
+    \begin{itemize}
+    \item 
+      Write test case first.
+      Make it red.
+    \item 
+      Turn green asap, by even faking it or hardwiring it.
+      Refine it then.
+    \item 
+      Small and steady paces.
+    \item 
+      Refine your test cases.
+    \end{itemize}
+    \end{block}
+\end{frame}
+
+\subsection{setUp}
+
+\begin{frame}
+    \frametitle{setUp}
+
+    \begin{block}{To-Do}
+        \begin{itemize}
+            \item[$\surd$] Invoke test method
+            \item Invoke setUp first 
+            \item Invoke tearDown afterward 
+            \item Invoke tearDown even if the test method fails 
+            \item Run multiple tests 
+            \item Report collected results 
+        \end{itemize}
+    \end{block}
+    \note[item]{
+      What to do next?
+      If we can only do just one feature, who will benefit the product most?
+    }
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{setUp}
+
+    \begin{columns}[t]
+        \small
+        \column{.45\textwidth}
+        \begin{onlyenv}<1-4>
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCaseTest(TestCase):
+  def testRunning(self):
+    test=WasRun("testMethod")
+    assert(not test.wasRun)
+    test.run()
+    assert(test.wasRun)
+  def testSetUp(self):
+    test=WasRun("testMethod")
+    test.run()
+    assert(test.wasSetUp)
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<5>
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCaseTest(TestCase):
+  def testRunning(self):
+    test=WasRun("testMethod")
+    test.run()
+    assert(test.wasRun)
+  def testSetUp(self):
+    test=WasRun("testMethod")
+    test.run()
+    assert(test.wasSetUp)
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<6>
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCaseTest(TestCase):
+  def setUp(self):
+    self.test=WasRun("testMethod")
+  def testRunning(self):
+    self.test.run()
+    assert(self.test.wasRun)
+  def testSetUp(self):
+    self.test.run()
+    assert(self.test.wasSetUp)
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \column{.45\textwidth}
+        \begin{onlyenv}<2>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCase:
+  def setUp(self):
+    pass
+  def run(self):
+    self.setUp()
+    method=getattr(self, self.name)
+    method()
+class WasRun:
+  def setUp(self):
+    self.wasSetUp = 1
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<3>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class WasRun(TestCase):
+  def __init__(self,name):
+    self.wasRun = 0
+    TestCase.__init__(self, name)
+  def testMethod(self):
+    self.wasRun = 1
+  def setUp(self):
+    self.wasSetUp = 1
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<4->
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class WasRun(TestCase):
+  def __init__(self,name):
+    TestCase.__init__(self, name)
+  def testMethod(self):
+    self.wasRun = 1
+  def setUp(self):
+    self.wasRun = 0
+    self.wasSetUp = 1
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{log string}
+
+    \begin{block}{To-Do}
+        \begin{itemize}
+            \item[$\surd$] Invoke test method
+            \item[$\surd$] Invoke setUp first 
+            \item Invoke tearDown afterward 
+            \item Invoke tearDown even if the test method fails 
+            \item Run multiple tests 
+            \item Report collected results 
+            \item Log string in WasRun 
+        \end{itemize}
+    \end{block}
+    \note[item]{
+      We add a to-do item.
+      We do ``log string in WasRun'' because this is a refactory.
+      TDD supposes a project will be cut anytime.
+      Even when it is cut unexpectedly, we deliver a working product with highly quality.
+    }
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{log string}
+
+    \begin{columns}[t]
+        \small
+        \column{.45\textwidth}
+        \begin{onlyenv}<1>
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCaseTest(TestCase):
+  def setUp(self):
+    self.test=WasRun("testMethod")
+  def testRunning(self):
+    self.test.run()
+    assert(self.test.wasRun)
+  def testSetUp(self):
+    self.test.run()
+    assert(self.test.wasSetUp)
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<2>
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCaseTest(TestCase):
+  def setUp(self):
+    self.test=WasRun("testMethod")
+  def testTemplateMethod(self):
+    self.test.run()
+    assert("setUp test "
+      == self.test.log)
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<3>
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCaseTest(TestCase):
+  def testTemplateMethod(self):
+    test=WasRun("testMethod")
+    test.run()
+    assert("setUp test "
+      == test.log)
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \column{.45\textwidth}
+        \begin{onlyenv}<1>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class WasRun(TestCase):
+  def __init__(self,name):
+    TestCase.__init__(self, name)
+  def testMethod(self):
+    self.wasRun = 1
+  def setUp(self):
+    self.wasRun = 0
+    self.wasSetUp = 1
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<2>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class WasRun(TestCase):
+  def __init__(self,name):
+    TestCase.__init__(self, name)
+  def testMethod(self):
+    self.wasRun = 1
+    self.log = self.log + "test "
+  def setUp(self):
+    self.wasRun = 0
+    self.wasSetUp = 1
+    self.log = "setUp "
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<3>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class WasRun(TestCase):
+  def __init__(self,name):
+    TestCase.__init__(self, name)
+  def testMethod(self):
+    self.log = self.log + "test "
+  def setUp(self):
+    self.log = "setUp "
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+    \end{columns}
+\end{frame}
+
+\subsection{tearDown}
+
+\begin{frame}
+    \frametitle{tearDown}
+
+    \begin{block}{To-Do}
+        \begin{itemize}
+            \item[$\surd$] Invoke test method
+            \item[$\surd$] Invoke setUp first 
+            \item Invoke tearDown afterward 
+            \item Invoke tearDown even if the test method fails 
+            \item Run multiple tests 
+            \item Report collected results 
+            \item[$\surd$] Log string in WasRun 
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{tearDown}
+
+    \begin{columns}[t]
+        \small
+        \column{.45\textwidth}
+        \begin{onlyenv}<1->
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCaseTest(TestCase):
+  def testTemplateMethod(self):
+    test=WasRun("testMethod")
+    test.run()
+    assert("setUp test tearDown"
+      == test.log)
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \column{.45\textwidth}
+        \begin{onlyenv}<2>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCase:
+  def tearDown(self):
+    pass
+  def run(self):
+    self.setUp()
+    method=getattr(self, self.name)
+    method()
+    self.tearDown()
+class WasRun(TestCase):
+  def tearDown(self):
+    self.log = self.log + "tearDown"
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{review}
+
+  \begin{block}{~}
+    \begin{itemize}
+    \item 
+      To-do list is dynamic.
+    \item 
+      Order of tasks in to-do list is nothing about their importance.
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\subsection{report results}
+
+\begin{frame}
+  \frametitle{report results}
+
+  \begin{block}{To-Do}
+    \begin{itemize}
+    \item[$\surd$] Invoke test method
+    \item[$\surd$] Invoke setUp first 
+    \item[$\surd$] Invoke tearDown afterward 
+    \item Invoke tearDown even if the test method fails 
+    \item Run multiple tests 
+    \item Report collected results 
+    \item[$\surd$] Log string in WasRun 
+    \end{itemize}
+  \end{block}
+  \note{
+    What is the most important?
+    Reports.
+    For now, we show nothing if all cases pass.
+    This is quite ugly.
+    The others are better-haves.
+  }
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{report results}
+
+    \begin{columns}[t]
+        \small
+        \column{.45\textwidth}
+        \begin{onlyenv}<1>
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCaseTest(TestCase):
+  def testResult(self):
+    test=WasRun("testMethod")
+    result = test.run()
+    assert("1 run, 0 failed"
+      == result.summary())
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<2>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestResult:
+  def summary(self):
+    return "1 run, 0 failed"
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<3>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestResult:
+  def summary(self):
+    return "%d run, 0 failed"
+        % self.run
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<4>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestResult:
+  def __init__(self):
+    self.run = 0
+  def summary(self):
+    return "%d run, 0 failed"
+        % self.run
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<5->
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestResult:
+  def __init__(self):
+    self.run = 0
+  def summary(self):
+    return "%d run, 0 failed"
+        % self.run
+  def started(self):
+    self.run=self.run+1
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \column{.45\textwidth}
+        \begin{onlyenv}<1>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestResult:
+  def summary(self):
+    return "1 run, 0 failed"
+class TestCase:
+  def run(self):
+    self.setUp()
+    method=getattr(self, self.name)
+    method()
+    self.tearDown()
+    return TestResult()
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<2-5>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCase:
+  def run(self):
+    self.setUp()
+    method=getattr(self, self.name)
+    method()
+    self.tearDown()
+    return TestResult()
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<6>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCase:
+  def run(self):
+    result=TestResult()
+    result.started()
+    self.setUp()
+    method=getattr(self, self.name)
+    method()
+    self.tearDown()
+    return result
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+    \end{columns}
+    \note<1>{
+      Tests in TDD are actually documents, executable documents.
+    }
+\end{frame}
+
+\begin{frame}
+    \frametitle{failed results}
+
+    \begin{block}{To-Do}
+        \begin{itemize}
+            \item[$\surd$] Invoke test method
+            \item[$\surd$] Invoke setUp first 
+            \item[$\surd$] Invoke tearDown afterward 
+            \item Invoke tearDown even if the test method fails 
+            \item Run multiple tests 
+            \item Report collected results 
+            \item[$\surd$] Log string in WasRun 
+            \item Report failed results
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{failed results}
+
+    \begin{columns}[t]
+        \small
+        \column{.45\textwidth}
+        \begin{onlyenv}<1>
+            \begin{block}{test cases}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCaseTest(TestCase):
+  def testFailedResult(self):
+    test=WasRun("testBrokenMethod")
+    result = test.run()
+    assert("1 run, 1 failed"
+      == result.summary())
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<2->
+            \begin{block}{test cases}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCaseTest(TestCase):
+  def testFailedResult(self):
+    test=WasRun("testBrokenMethod")
+    result = test.run()
+    assert("1 run, 1 failed"
+      == result.summary())
+  def testFailedResultFormat(self):
+    result=TestResult()
+    result.started()
+    result.failed()
+    assert("1 run, 1 failed"
+      == result.summary())
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \column{.45\textwidth}
+        \begin{onlyenv}<1>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class WasRun(TestCase):
+  def testBrokenMethod(self):
+    raise Exception
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<2>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestResult:
+  def __init__(self):
+    self.run=0
+    self.failed=0
+  def failed(self):
+    self.failed=self.failed+1
+  def summary(self):
+    return "%d run, %d failed"
+        % (self.run, self.failed)
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<3>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCase:
+  def run(self):
+    result=TestResult()
+    result.started()
+    self.setUp()
+    try:
+      method=getattr(self,self.name)
+      method()
+    except:
+      result.failed()
+    self.tearDown()
+    return result
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+    \end{columns}
+    \note<3>{
+      These code reminds us that exceptions from setUp() and tearDown().
+    }
+\end{frame}
+
+\begin{frame}
+    \frametitle{failed results}
+
+    \begin{block}{To-Do}
+        \begin{itemize}
+            \item[$\surd$] Invoke test method
+            \item[$\surd$] Invoke setUp first 
+            \item[$\surd$] Invoke tearDown afterward 
+            \item Invoke tearDown even if the test method fails 
+            \item Run multiple tests 
+            \item[$\surd$] Report collected results 
+            \item[$\surd$] Log string in WasRun 
+            \item[$\surd$] Report failed results
+            \item Catch and report setUp() and tearDown() exceptions
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{review}
+
+    \begin{block}{~}
+        \begin{itemize}
+            \item 
+                Tests are actually documents, in SE term, executable documents.
+            \item 
+                Notice a potential problem and note it on to-do list instead of addressing it immediately.
+            \item 
+                A test case, functional codes, a test case, \ldots\\
+                v.s.\ test cases, functional codes, \ldots
+                \note{
+                  The key difference is feedbacking.
+                }
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\subsection{test suite}
+
+\begin{frame}
+    \frametitle{test suite}
+
+    \begin{block}{To-Do}
+        \begin{itemize}
+            \item[$\surd$] Invoke test method
+            \item[$\surd$] Invoke setUp first 
+            \item[$\surd$] Invoke tearDown afterward 
+            \item Invoke tearDown even if the test method fails 
+            \item Run multiple tests 
+            \item[$\surd$] Report collected results 
+            \item[$\surd$] Log string in WasRun 
+            \item[$\surd$] Report failed results
+            \item Catch and report setUp() and tearDown() errors
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{test suite}
+
+        \small
+        \begin{onlyenv}<1>
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+print TestCaseTest('testTemplateMethod').run().summary()                    
+print TestCaseTest('testResult').run().summary()                    
+print TestCaseTest('testFailedResultFormat').run().summary()                    
+print TestCaseTest('testFailedResult').run().summary()                    
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{test suite}
+
+    \begin{columns}[t]
+        \small
+        \column{.45\textwidth}
+        \begin{onlyenv}<1->
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCaseTest(TestCase):
+  def testSuite(self):
+    suite=TestSuite()
+    suite.add(
+      WasRun('testMethod'))
+    suite.add(
+      WasRun('testBrokenMethod'))
+    result=suite.run()
+    assert('2 run, 1 failed' 
+      == result.summary())
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \column{.45\textwidth}
+        \begin{onlyenv}<2>
+            \begin{block}{functional code}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestSuite:
+  def __init__(self):
+    self.tests=[]
+  def add(self, test):
+    self.tests.append(test)
+  def run(self):
+    result=TestResult()
+    for x in self.tests:
+      x.run()
+    return result
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<3>
+            \begin{block}{functional code}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestSuite:
+  def run(self):
+    result=TestResult()
+    for x in self.tests:
+      result.merge(x.run())
+    return result
+class TestResult:
+  def merge(self, result):
+    self.run=self.run+result.run
+    self.failed=self.failed+result.failed
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+    \end{columns}
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{test suite}
+
+        \small
+        \begin{onlyenv}<1>
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+print TestCaseTest('testTemplateMethod').run().summary()                    
+print TestCaseTest('testResult').run().summary()                    
+print TestCaseTest('testFailedResultFormat').run().summary()                    
+print TestCaseTest('testFailedResult').run().summary()                    
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<2>
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+suite=TestSuite()
+suite.add(TestCaseTest('testTemplateMethod'))
+suite.add(TestCaseTest('testResult'))
+suite.add(TestCaseTest('testFailedResultFormat'))
+suite.add(TestCaseTest('testFailedResult'))
+result=suite.run()
+print result.summary()
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+\end{frame}
+
+\begin{frame}
+    \frametitle{test suite}
+
+    \begin{block}{To-Do}
+        \begin{itemize}
+            \item[$\surd$] Invoke test method
+            \item[$\surd$] Invoke setUp first 
+            \item[$\surd$] Invoke tearDown afterward 
+            \item Invoke tearDown even if the test method fails 
+            \item Run multiple tests 
+            \item[$\surd$] Report collected results 
+            \item[$\surd$] Log string in WasRun 
+            \item[$\surd$] Report failed results
+            \item Catch and report setUp() and tearDown() errors
+            \item Automatically create TestSuite() from a TestCase class
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{test suite}
+
+    \begin{columns}[t]
+        \small
+        \column{.45\textwidth}
+        \begin{onlyenv}<1>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestSuite:
+  def run(self):
+    result=TestResult()
+    for x in self.tests:
+      result.merge(x.run())
+    return result
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<2-3>
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestSuite:
+  def run(self):
+    result=TestResult()
+    for x in self.tests:
+      x.run(result)
+    return result
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<4->
+            \begin{block}{functional codes}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestSuite:
+  def run(self,result):
+    for x in self.tests:
+      x.run(result)
+    return result
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \column{.45\textwidth}
+        \begin{onlyenv}<1-2>
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCase:
+  def run(self):
+    result=TestResult()
+    result.started()
+    self.setUp()
+    try:
+      method=getattr(self,self.name)
+      method()
+    except:
+      result.failed()
+    self.tearDown()
+    return result
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+
+        \begin{onlyenv}<3->
+            \begin{block}{test case}
+                \begin{lstlisting}[language=Python,columns=fullflexible]
+class TestCase:
+  def run(self,result):
+    result.started()
+    self.setUp()
+    try:
+      method=getattr(self,self.name)
+      method()
+    except:
+      result.failed()
+    self.tearDown()
+                \end{lstlisting}
+            \end{block}
+        \end{onlyenv}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{test suite}
+
+    \begin{block}{To-Do}
+        \begin{itemize}
+            \item[$\surd$] Invoke test method
+            \item[$\surd$] Invoke setUp first 
+            \item[$\surd$] Invoke tearDown afterward 
+            \item Invoke tearDown even if the test method fails 
+            \item[$\surd$] Run multiple tests 
+            \item[$\surd$] Report collected results 
+            \item[$\surd$] Log string in WasRun 
+            \item[$\surd$] Report failed results
+            \item Catch and report setUp() and tearDown() errors
+            \item Automatically create TestSuite() from a TestCase class
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{review}
+
+    \begin{block}{~}
+        \begin{itemize}
+            \item 
+                Don't go far away from green bars.
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\section{Summaries \& Experiences}
+
+\subsection{summaries}
+
+\begin{frame}[t]
+  \frametitle{Summaries}
+
+  \begin{block}{~}
+    \begin{enumerate}
+    \item 
+      red $\xrightarrow{\text{functional code}}$ green $\xrightarrow{\text{refine}}$ green $\xrightarrow{\text{next feature}}$ red $\rightarrow$ ...
+    \item<2->
+      Get to a green bar asap.
+      \begin{onlyenv}<2>
+        \begin{itemize}
+        \item
+          Fake it, then make it.
+        \item 
+          Obvious implementation.
+        \item 
+          Keep the triangle.
+        \end{itemize}
+      \end{onlyenv}
+    \item<3>
+      Refine to the currently cleanest codes
+      \begin{itemize}
+      \item
+        Keep green.
+      \item 
+        Small paces, always testing.
+      \item
+        NEVER introduce new feature while refining.
+      \item 
+        As clean as you can, even the codes which will be definitely discarded in final release.
+      \item 
+        Clean up test-case codes as well.
+      \item 
+        Manage your codes, by tools.
+      \end{itemize}
+    \end{enumerate}
+  \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Why TDD works?}
+
+    \begin{columns}[t]
+        \column{.4\textwidth}
+        \begin{block}{steps}
+        \begin{enumerate}
+        \item
+            requirement analyze
+        \item 
+            design
+        \item 
+            code
+        \item 
+            test
+        \item 
+            release/deploy
+        \end{enumerate}
+        \end{block}
+
+        \column{.5\textwidth}
+        \begin{block}{CMMI: level 2}
+            \begin{itemize}
+                \item REQuirement Management
+                \item Project Planning
+                \item Project Monitoring and Control
+                \item Supply Agreement Management 
+                \item Product and Process Quality Assurance
+                \item Configuration Management 
+            \end{itemize}
+        \end{block}
+    \end{columns}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Why TDD works?}
+
+    \begin{block}{Reducing failures}
+    \begin{enumerate}
+        \item
+            quick feedback
+        \item 
+            clean design \& code
+        \item 
+            thinking in testing
+        \item 
+            be happy, be solid
+    \end{enumerate}
+    \end{block}
+
+\end{frame}
+
+\section{Q\&A}
+
+\begin{frame}
+  \frametitle{}
+  \begin{center}
+    \Huge
+    Questions?
+  \end{center}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Q\&A}
+
+    \begin{block}{~}
+        \begin{itemize}
+        \item<1->
+            Where shall I write to-do lists?
+        \item<2->
+            It takes too long to run regression\ldots
+        \item<3->
+            It takes too long to compile\ldots
+        \item<4->
+            I am working on untestable features
+            \begin{itemize}
+                \item
+                    external systems: databases, file systems, \ldots
+                \item
+                    undeterminism: probability algorithms, parallel/distributed systems, \ldots
+                \item 
+                    third party codes and generated codes
+                \item 
+                    GUIs
+                \item 
+                    compiler
+            \end{itemize}
+        \item<5>
+            I am tired\ldots
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\end{document}
+
