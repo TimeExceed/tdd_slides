@@ -403,7 +403,7 @@ def calcAuxDigest(tex, pdfDir):
         return ''
 
 def runLuaLatex(tex, pdfDir):
-    sp.check_call(['lualatex', tex], cwd=pdfDir)
+    sp.check_call(['lualatex', '-shell-escape', tex], cwd=pdfDir)
     return calcAuxDigest(tex, pdfDir)
 
 def latex(target, source, env):

@@ -2,4 +2,4 @@
 
 This is a short introduction to Test-Driven Development in slides.
 
-To compile it to pdf, one have to install scons and lualatex, with beamer, listings and etc.
+To compile it to pdf, one have to install scons, Pygments, font Inconsolata and lualatex with beamer, minted and etc.
